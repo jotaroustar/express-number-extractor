@@ -27,7 +27,8 @@
 
 ### 方式二：在线体验
 
-> 即将上线，敬请期待
+在线地址：jotarou.com/tools/express
+备用地址：jotaroustar.github.io/express-number-extractor
 
 ---
 
