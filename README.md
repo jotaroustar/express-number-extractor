@@ -2,7 +2,6 @@
 
 > 一个纯前端的快递单号批量提取工具，支持文字粘贴和截图 AI 识别，无需后端，开箱即用。
 
-![License](https://img.shields.io/badge/license-MIT-blue)
 ![HTML](https://img.shields.io/badge/HTML-单文件-orange)
 ![AI](https://img.shields.io/badge/AI-OCR识别-green)
 
@@ -90,13 +89,6 @@ Base URL: https://jotarou.com
 └── index.html   # 全部代码，单文件
 ```
 
----
-
-## 📄 License
-
-MIT License · 自由使用、修改、分发
-
----
 
 ## 🔗 相关项目
 
@@ -110,3 +102,5 @@ MIT License · 自由使用、修改、分发
 <p align="center">
   Made with ❤️ by <a href="https://github.com/jotaroustar">jotaroustar</a>
 </p>
+
+© 2026 jotarou.com · 代码版权所有，禁止直接复制用于商业产品
