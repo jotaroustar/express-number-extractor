@@ -1,174 +1,363 @@
 <!DOCTYPE html>
+<!-- Copyright © 2026 jotarou.com. All rights reserved.
+     Unauthorized copying or commercial use is prohibited. -->
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>快递单号提取器 v2</title>
+<title>AI 快递单号提取器 | jotarou.com</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: "PingFang SC","Microsoft YaHei",sans-serif;
-  background: #f4f6f9; color: #1a1a2e; padding: 20px; line-height: 1.6;
-}
-.container { max-width: 980px; margin: 0 auto; }
-header { text-align:center; margin-bottom:20px; }
-h1 { font-size:24px; font-weight:700; color:#1a73e8; margin-bottom:4px; }
-.subtitle { font-size:13px; color:#999; }
+  :root {
+    --bg: #f5f0e8;
+    --bg-card: #faf7f2;
+    --brown: #2c1f0e;
+    --brown-mid: #5a3e28;
+    --brown-light: #8a6a4a;
+    --accent: #d4622a;
+    --accent-light: #f0e6de;
+    --accent-hover: #b8521f;
+    --border: #e0d5c5;
+    --text: #2c1f0e;
+    --text-muted: #7a6a55;
+    --success: #4a7c59;
+    --shadow: 0 2px 12px rgba(44,31,14,0.08);
+    --shadow-lg: 0 8px 32px rgba(44,31,14,0.12);
+  }
+  [data-theme="dark"] {
+    --bg: #1a1208;
+    --bg-card: #221a0e;
+    --brown: #f0e8d8;
+    --brown-mid: #c8b89a;
+    --brown-light: #9a8a72;
+    --accent: #e07040;
+    --accent-light: #2a1a0e;
+    --accent-hover: #f08050;
+    --border: #3a2a18;
+    --text: #f0e8d8;
+    --text-muted: #9a8a72;
+    --shadow: 0 2px 12px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+  }
 
-.api-bar {
-  background:#fff; border-radius:12px; border:1px solid #e8e8e8;
-  padding:14px 20px; margin-bottom:16px;
-}
-.api-row {
-  display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;
-}
-.api-row:last-child { margin-bottom:0; }
-.api-bar label { font-size:13px; font-weight:600; color:#555; white-space:nowrap; min-width:80px; }
-.api-bar input[type=password], .api-bar input[type=text] {
-  flex:1; min-width:200px; padding:8px 12px;
-  border:1.5px solid #e0e4e8; border-radius:8px;
-  font-size:13px; font-family:monospace; outline:none; transition:border 0.2s;
-}
-.api-bar input:focus { border-color:#1a73e8; }
-.model-select {
-  flex:1; min-width:200px; padding:8px 12px;
-  border:1.5px solid #e0e4e8; border-radius:8px;
-  font-size:13px; outline:none; background:#fff; cursor:pointer;
-}
-.model-select:focus { border-color:#1a73e8; }
-.model-hint { font-size:11px; color:#bbb; margin-left:4px; }
-.save-btn {
-  padding:8px 18px; background:#1a73e8; color:#fff;
-  border:none; border-radius:8px; font-size:13px;
-  font-weight:600; cursor:pointer; white-space:nowrap;
-}
-.save-btn:hover { background:#1557b0; }
-.api-saved { font-size:12px; color:#10b981; white-space:nowrap; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-.tabs { display:flex; gap:8px; margin-bottom:16px; }
-.tab {
-  padding:10px 24px; border-radius:10px; border:1.5px solid #e0e4e8;
-  background:#fff; font-size:14px; font-weight:600; color:#888;
-  cursor:pointer; transition:all 0.15s;
-}
-.tab.active { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
 
-.panel { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-@media(max-width:700px){ .panel{ grid-template-columns:1fr; } }
+  /* ── Top Bar ── */
+  .top-bar {
+    background: var(--brown);
+    color: var(--bg);
+    padding: 0 24px;
+    height: 48px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  [data-theme="dark"] .top-bar { background: #0e0a04; }
+  .top-bar-left { font-size: 13px; opacity: 0.7; }
+  .top-bar-left a { color: var(--bg); text-decoration: none; opacity: 0.7; }
+  .top-bar-left a:hover { opacity: 1; }
+  .theme-btn {
+    background: none; border: 1px solid rgba(255,255,255,0.3);
+    color: var(--bg); border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; transition: all 0.2s;
+  }
+  .theme-btn:hover { background: rgba(255,255,255,0.1); }
 
-.card {
-  background:#fff; border-radius:14px; border:1px solid #e8e8e8;
-  padding:18px; display:flex; flex-direction:column;
-}
-.card-title {
-  font-size:14px; font-weight:600; margin-bottom:12px;
-  display:flex; align-items:center; justify-content:space-between;
-}
-.count-badge {
-  background:#e8f3ff; color:#1a73e8;
-  font-size:12px; font-weight:600; padding:2px 10px; border-radius:10px;
-}
-textarea {
-  width:100%; min-height:320px; border:1.5px solid #e0e4e8;
-  border-radius:10px; padding:12px; font-size:13px;
-  font-family:'Courier New',monospace; resize:vertical; outline:none; transition:border 0.2s;
-}
-textarea:focus { border-color:#1a73e8; }
+  /* ── Header ── */
+  .header { padding: 48px 24px 32px; max-width: 920px; margin: 0 auto; }
+  .header-eyebrow {
+    font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin-bottom: 12px;
+  }
+  .header h1 {
+    font-size: clamp(24px, 4vw, 36px); font-weight: 800;
+    color: var(--brown); line-height: 1.2; margin-bottom: 12px;
+  }
+  .header-accent-line {
+    width: 48px; height: 3px; background: var(--accent);
+    margin-bottom: 16px; border-radius: 2px;
+  }
+  .header p { font-size: 15px; color: var(--text-muted); max-width: 520px; }
 
-.upload-zone {
-  border:2px dashed #c8d8f0; border-radius:12px;
-  min-height:200px; display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  cursor:pointer; transition:all 0.2s; padding:20px; text-align:center; background:#fafcff;
-}
-.upload-zone:hover, .upload-zone.drag { border-color:#1a73e8; background:#f0f7ff; }
-.upload-zone .icon { font-size:40px; margin-bottom:10px; }
-.upload-zone .hint { font-size:14px; color:#888; }
-.upload-zone .hint2 { font-size:12px; color:#bbb; margin-top:6px; }
-.preview-img {
-  max-width:100%; max-height:260px; border-radius:8px;
-  border:1px solid #e0e4e8; margin-top:10px;
-}
-input[type=file] { display:none; }
+  /* ── Container ── */
+  .container { max-width: 920px; margin: 0 auto; padding: 0 24px 80px; }
 
-.output-box {
-  flex:1; min-height:320px; max-height:480px; overflow-y:auto;
-  border:1.5px solid #e0e4e8; border-radius:10px;
-  padding:12px; font-size:13px; font-family:'Courier New',monospace; background:#fafbfc;
-}
-.num { display:block; padding:4px 0; border-bottom:1px solid #f0f0f0; }
-.empty { color:#bbb; text-align:center; padding:40px 0; font-family:sans-serif; }
+  /* ── Section label ── */
+  .section-label {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 16px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-.btn-row { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
-button {
-  flex:1; min-width:100px; padding:10px 14px;
-  border:none; border-radius:10px; font-size:13px;
-  font-weight:600; cursor:pointer; transition:all 0.15s;
-}
-.btn-primary { background:#1a73e8; color:#fff; }
-.btn-primary:hover { background:#1557b0; }
-.btn-secondary { background:#f0f2f5; color:#444; }
-.btn-secondary:hover { background:#e4e7eb; }
-.btn-success { background:#10b981; color:#fff; }
-.btn-success:hover { background:#0d9668; }
-.btn-orange { background:#f59e0b; color:#fff; }
-.btn-orange:hover { background:#d97706; }
+  /* ── API Bar ── */
+  .api-bar {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .api-row {
+    display: flex; align-items: center; gap: 12px;
+    flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .api-row:last-child { margin-bottom: 0; }
+  .api-label {
+    font-size: 13px; font-weight: 600; color: var(--brown);
+    white-space: nowrap; min-width: 72px;
+  }
+  .api-input {
+    flex: 1; min-width: 200px; padding: 9px 13px;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 13px; font-family: monospace;
+    background: var(--bg); color: var(--text);
+    outline: none; transition: border-color 0.2s;
+  }
+  .api-input:focus { border-color: var(--accent); }
+  .model-select {
+    flex: 1; min-width: 200px; padding: 9px 13px;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 13px; background: var(--bg); color: var(--text);
+    outline: none; cursor: pointer; appearance: none;
+    transition: border-color 0.2s;
+  }
+  .model-select:focus { border-color: var(--accent); }
+  .save-btn {
+    padding: 9px 18px; background: var(--accent); color: #fff;
+    border: none; border-radius: 8px; font-size: 13px;
+    font-weight: 600; cursor: pointer; white-space: nowrap;
+    transition: all 0.2s; font-family: inherit;
+  }
+  .save-btn:hover { background: var(--accent-hover); }
+  .api-saved { font-size: 12px; color: var(--success); white-space: nowrap; }
+  .reg-link {
+    font-size: 12px; color: var(--accent); white-space: nowrap;
+    text-decoration: none; font-weight: 500;
+  }
+  .reg-link:hover { text-decoration: underline; }
+  .cost-hint { font-size: 11px; color: var(--text-muted); }
 
-.options {
-  display:flex; gap:14px; margin-bottom:12px;
-  font-size:13px; color:#666; flex-wrap:wrap; align-items:center;
-}
-.options label { display:flex; align-items:center; gap:5px; cursor:pointer; }
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tab {
+    padding: 9px 22px; border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-card); color: var(--brown-mid);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--accent); }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-.status-bar {
-  background:#f0f7ff; border:1px solid #c8d8f0; border-radius:8px;
-  padding:8px 14px; font-size:12px; color:#1a73e8;
-  margin-bottom:12px; display:none;
-}
-.status-bar.show { display:block; }
+  /* ── Options ── */
+  .options {
+    display: flex; gap: 16px; margin-bottom: 16px;
+    font-size: 13px; color: var(--brown-mid); flex-wrap: wrap; align-items: center;
+  }
+  .options label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  .options input[type="checkbox"] { accent-color: var(--accent); }
+  .options select {
+    padding: 3px 8px; border-radius: 6px;
+    border: 1.5px solid var(--border);
+    font-size: 13px; background: var(--bg); color: var(--text);
+    outline: none;
+  }
+  .options select:focus { border-color: var(--accent); }
 
-.cost-tip {
-  font-size:11px; color:#10b981; margin-top:8px;
-  padding:6px 10px; background:#f0fdf8; border-radius:6px;
-}
+  /* ── Status Bar ── */
+  .status-bar {
+    background: var(--accent-light); border: 1px solid var(--border);
+    border-radius: 8px; padding: 9px 16px; font-size: 12px;
+    color: var(--accent); margin-bottom: 16px; display: none;
+  }
+  .status-bar.show { display: block; }
 
-.toast {
-  position:fixed; bottom:28px; left:50%;
-  transform:translateX(-50%) translateY(80px);
-  background:#1a1a2e; color:#fff; padding:10px 24px;
-  border-radius:20px; font-size:13px; opacity:0; transition:all 0.25s; z-index:100;
-}
-.toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
-.hint-text { font-size:11px; color:#bbb; margin-top:8px; line-height:1.7; }
+  /* ── Panel ── */
+  .panel { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .panel { grid-template-columns: 1fr; } }
+
+  /* ── Card ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px;
+    display: flex; flex-direction: column;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 14px; font-weight: 700; color: var(--brown);
+    margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .count-badge {
+    background: var(--accent-light); color: var(--accent);
+    font-size: 12px; font-weight: 700;
+    padding: 2px 10px; border-radius: 10px;
+  }
+
+  textarea {
+    width: 100%; min-height: 300px;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 13px; font-size: 13px;
+    font-family: 'Courier New', monospace;
+    resize: vertical; outline: none;
+    background: var(--bg); color: var(--text);
+    transition: border-color 0.2s;
+    line-height: 1.7;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  /* ── Upload Zone & Preview ── */
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: 12px;
+    min-height: 200px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s;
+    padding: 24px; text-align: center;
+    background: var(--bg);
+  }
+  .upload-zone:hover, .upload-zone.drag {
+    border-color: var(--accent); background: var(--accent-light);
+  }
+  .upload-zone .icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-zone .hint { font-size: 14px; color: var(--text-muted); }
+  .upload-zone .hint2 { font-size: 12px; color: var(--brown-light); margin-top: 6px; }
+  
+  .preview-container {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px;
+  }
+  .preview-thumb {
+    width: 64px; height: 64px; object-fit: cover;
+    border-radius: 6px; border: 1.5px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  input[type="file"] { display: none; }
+
+  /* ── Output ── */
+  .output-box {
+    flex: 1; min-height: 300px; max-height: 440px; overflow-y: auto;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 13px; font-size: 13px;
+    font-family: 'Courier New', monospace;
+    background: var(--bg);
+    line-height: 1.7;
+  }
+  .num {
+    display: block; padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  .num:last-child { border-bottom: none; }
+  .empty { color: var(--text-muted); text-align: center; padding: 48px 0; font-family: sans-serif; }
+
+  /* ── Buttons ── */
+  .btn-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .btn {
+    flex: 1; min-width: 90px; padding: 10px 14px;
+    border: none; border-radius: 10px; font-size: 13px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+    font-family: inherit;
+  }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+  .btn-secondary {
+    background: var(--bg); color: var(--brown-mid);
+    border: 1.5px solid var(--border);
+  }
+  .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover:not(:disabled) { filter: brightness(1.1); }
+  .btn-orange { background: #e8a020; color: #fff; }
+  .btn-orange:hover:not(:disabled) { filter: brightness(1.1); }
+
+  /* ── Hint ── */
+  .hint-text {
+    font-size: 11px; color: var(--text-muted);
+    margin-top: 10px; line-height: 1.8;
+    padding: 8px 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .cost-tip {
+    font-size: 11px; color: var(--success);
+    margin-top: 10px; padding: 7px 12px;
+    background: var(--bg); border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--brown); color: var(--bg);
+    padding: 10px 24px; border-radius: 20px;
+    font-size: 13px; opacity: 0; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100;
+  }
+  [data-theme="dark"] .toast { background: var(--accent); }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ── Footer ── */
+  .footer {
+    border-top: 1px solid var(--border); padding: 24px;
+    text-align: center; font-size: 12px; color: var(--text-muted);
+    line-height: 1.8; max-width: 920px; margin: 0 auto;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
 </style>
 </head>
 <body>
-<div class="container">
-  <header>
-    <h1>快递单号提取器 v2</h1>
-    <p class="subtitle">文字粘贴 + 截图识别 · 自动去重 · 一键导出 · 纯本地运行</p>
-  </header>
 
+<div class="top-bar">
+  <div class="top-bar-left">
+    <a href="https://jotarou.com">jotarou.com</a>
+    <span> · AI 效率工具</span>
+  </div>
+  <div class="top-bar-right">
+    <button class="theme-btn" onclick="toggleTheme()">🌙 深色</button>
+  </div>
+</div>
+
+<div class="header">
+  <div class="header-eyebrow">AI 效率工具 · 第 1 个</div>
+  <h1>快递单号提取器</h1>
+  <div class="header-accent-line"></div>
+  <p>文字粘贴 + 截图识别，自动去重，一键导出。纯文字模式完全免费。</p>
+</div>
+
+<div class="container">
+
+  <div class="section-label">API 配置</div>
   <div class="api-bar">
     <div class="api-row">
-      <label>API Key</label>
-      <input type="password" id="apiKey" placeholder="填入 jotarou.com 注册后生成的 sk-... key"/>
+      <div class="api-label">API Key</div>
+      <input class="api-input" type="password" id="apiKey" placeholder="填入 jotarou.com 注册后生成的 sk-... key"/>
       <button class="save-btn" onclick="saveKey()">保存</button>
       <span class="api-saved" id="keySaved" style="display:none">✓ 已保存</span>
-      <a href="https://jotarou.com" target="_blank" style="font-size:12px;color:#1a73e8;white-space:nowrap;text-decoration:none;">还没有 Key？→ 注册免费领 ¥7</a>
+      <a class="reg-link" href="https://jotarou.com" target="_blank">还没有 Key？→ 注册免费领 ¥7</a>
     </div>
     <div class="api-row">
-      <label>识别模型</label>
+      <div class="api-label">识别模型</div>
       <select class="model-select" id="modelSelect" onchange="updateCostTip()">
         <option value="gpt-4o-mini">gpt-4o-mini（推荐）— 够用，最省钱</option>
-        <option value="gpt-4o">gpt-4o — 截图复杂/模糊时更准</option>
+        <option value="gpt-4o">gpt-4o — 截图复杂 / 模糊时更准</option>
         <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 — 速度快，备选</option>
         <option value="claude-sonnet-4-6">claude-sonnet-4-6 — 最准，较贵</option>
       </select>
-      <span class="model-hint" id="costHint"></span>
+      <span class="cost-hint" id="costHint"></span>
     </div>
   </div>
 
+  <div class="section-label">提取</div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('text')" id="tab-text">📋 粘贴文字</div>
     <div class="tab" onclick="switchTab('image')" id="tab-image">🖼️ 上传截图</div>
@@ -178,8 +367,8 @@ button {
     <label><input type="checkbox" id="dedup" checked> 自动去重</label>
     <label><input type="checkbox" id="sort"> 排序</label>
     <label>
-      最短位数:
-      <select id="minLen" style="padding:2px 6px;border-radius:6px;border:1px solid #ddd;font-size:13px;">
+      最短位数：
+      <select id="minLen">
         <option value="10">10</option>
         <option value="11">11</option>
         <option value="12" selected>12</option>
@@ -196,72 +385,91 @@ button {
         <div class="card-title">① 粘贴群消息</div>
         <textarea id="input" placeholder="把快递群消息整段粘贴到这里&#10;多个群的内容混在一起也可以&#10;单号和文字混杂没关系…"></textarea>
         <div class="btn-row">
-          <button class="btn-primary" onclick="extractFromText()">提取单号</button>
-          <button class="btn-secondary" onclick="clearInput()">清空</button>
+          <button class="btn btn-primary" id="btnExtractText" onclick="extractFromText()">提取单号</button>
+          <button class="btn btn-secondary" onclick="clearInput()">清空</button>
         </div>
-        <p class="hint-text">✅ 纯文字模式不调用 AI，不消耗费用，准确率接近 100%<br>支持 YT/JT/SF 等前缀单号及纯数字单号，连续粘连的单号也能拆开</p>
+        <div class="hint-text">✅ 纯文字模式不调用 AI，不消耗费用，准确率接近 100%<br>支持 YT / JT / SF 等前缀单号及纯数字单号，连续粘连的也能拆开</div>
       </div>
       <div id="imageTab" style="display:none">
         <div class="card-title">① 上传截图</div>
-        <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()"
+        <div class="upload-zone" id="dropZone"
+             onclick="document.getElementById('fileInput').click()"
              ondragover="event.preventDefault();this.classList.add('drag')"
              ondragleave="this.classList.remove('drag')"
              ondrop="handleDrop(event)">
           <div class="icon">📸</div>
-          <div class="hint">点击上传 或 直接拖入截图</div>
-          <div class="hint2">支持 JPG / PNG，可多张</div>
-          <img class="preview-img" id="previewImg" style="display:none"/>
+          <div class="hint">点击上传 或 拖拽截图到这里</div>
+          <div class="hint2">支持 JPG / PNG，可多选</div>
+          <div class="preview-container" id="previewContainer"></div>
         </div>
         <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFile(this.files)"/>
-        <div class="btn-row" style="margin-top:12px;">
-          <button class="btn-orange" onclick="extractFromImage()">🔍 识别并提取</button>
-          <button class="btn-secondary" onclick="clearImage()">清空</button>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnExtractImage" onclick="extractFromImage()">AI 识别单号</button>
+          <button class="btn btn-secondary" onclick="clearImage()">清空图片</button>
         </div>
-        <div class="cost-tip" id="costTip"></div>
+        <div class="cost-tip" id="costTip">当前模型：gpt-4o-mini · 费用估算：约 ¥0.01~0.03 / 张</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-title">
-        <span>② 提取结果</span>
+        ② 提取结果
         <span class="count-badge" id="count">0 个</span>
       </div>
       <div class="output-box" id="output">
         <div class="empty">提取结果会显示在这里</div>
       </div>
       <div class="btn-row">
-        <button class="btn-success" onclick="copyResult()">复制全部</button>
-        <button class="btn-secondary" onclick="exportExcel()">导出 Excel</button>
-        <button class="btn-secondary" onclick="clearResult()">清空结果</button>
+        <button class="btn btn-success" onclick="copyResult()">复制全部</button>
+        <button class="btn btn-orange" onclick="exportExcel()">导出 CSV</button>
+        <button class="btn btn-secondary" onclick="clearResult()">清空</button>
       </div>
     </div>
   </div>
+
+</div>
+
+<div class="footer">
+  <p>🔒 图片识别经前端压缩并加密后单次 API 转发，系统不留存图片数据。</p>
+  <p style="margin-top:6px">Made by <a href="https://jotarou.com">jotarou.com</a> · <a href="https://jotarou.com/tools/">更多 AI 工具</a></p>
 </div>
 
 <div class="toast" id="toast"></div>
-<div style="text-align:center;margin-top:20px;font-size:12px;color:#bbb;">
-  图片识别由 <a href="https://jotarou.com" target="_blank" style="color:#1a73e8;text-decoration:none;font-weight:600;">Jotarou API</a> 提供支持 · 注册送 ¥7 试用额度
-</div>
 
 <script>
 let results = [];
 let imageFiles = [];
 
 const MODEL_COST = {
-  'gpt-4o-mini':              '约 ¥0.01~0.03 / 张',
-  'gpt-4o':                   '约 ¥0.05~0.15 / 张',
-  'claude-haiku-4-5-20251001':'约 ¥0.02~0.05 / 张',
-  'claude-sonnet-4-6':        '约 ¥0.10~0.25 / 张'
+  'gpt-4o-mini':               '约 ¥0.01~0.03 / 张',
+  'gpt-4o':                    '约 ¥0.05~0.15 / 张',
+  'claude-haiku-4-5-20251001': '约 ¥0.02~0.05 / 张',
+  'claude-sonnet-4-6':         '约 ¥0.10~0.25 / 张'
 };
 
 window.onload = () => {
+  // 恢复 API Key
   const savedKey = localStorage.getItem('jotarou_key');
   if (savedKey) {
     document.getElementById('apiKey').value = savedKey;
     document.getElementById('keySaved').style.display = 'inline';
   }
+  // 恢复模型偏好
   const savedModel = localStorage.getItem('jotarou_model');
   if (savedModel) document.getElementById('modelSelect').value = savedModel;
+  
+  // 恢复提取记录（防刷新丢失）
+  const savedResults = localStorage.getItem('jotarou_express_results');
+  if (savedResults) {
+    try {
+      results = JSON.parse(savedResults);
+    } catch(e) {}
+  }
+
+  // 恢复主题
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  updateThemeBtn();
   updateCostTip();
   renderOutput();
 };
@@ -278,8 +486,9 @@ function updateCostTip() {
   const model = document.getElementById('modelSelect').value;
   localStorage.setItem('jotarou_model', model);
   const cost = MODEL_COST[model] || '';
-  document.getElementById('costTip').textContent = '当前模型：' + model + '  · 费用估算：' + cost;
-  document.getElementById('costHint').textContent = MODEL_COST[model] || '';
+  const tip = document.getElementById('costTip');
+  if (tip) tip.textContent = '当前模型：' + model + '  · 费用估算：' + cost;
+  document.getElementById('costHint').textContent = cost;
 }
 
 function switchTab(tab) {
@@ -293,18 +502,27 @@ function extractNumbers(text) {
   const minLen = parseInt(document.getElementById('minLen').value);
   const dedup = document.getElementById('dedup').checked;
   const doSort = document.getElementById('sort').checked;
+  
+  // 匹配带字母前缀的单号 和 独立纯数字串
   const p1 = /[A-Z]{1,3}\d{10,18}/g;
   const p2 = /(?<![A-Z\d])\d{12,18}(?!\d)/g;
   let found = [];
+  
   const m1 = text.match(p1); if (m1) found = found.concat(m1);
   const m2 = text.match(p2); if (m2) found = found.concat(m2);
+  
   found = found.filter(n => {
     const digits = n.replace(/[A-Za-z]/g, '');
     if (digits.length < minLen) return false;
     if (n.length > 20) return false;
-    if (/^(19|20)\d{2}$/.test(n)) return false;
+    if (/^(19|20)\d{2}$/.test(n)) return false; // 排除纯年份
+    
+    // 🌟新增优化：过滤 11 位且符合手机号号段规则的数字
+    if (digits.length === 11 && /^1[3-9]\d{9}$/.test(digits)) return false;
+    
     return true;
   });
+  
   if (dedup) found = [...new Set(found)];
   if (doSort) found.sort();
   return found;
@@ -313,19 +531,43 @@ function extractNumbers(text) {
 function extractFromText() {
   const text = document.getElementById('input').value;
   if (!text.trim()) { showToast('请先粘贴消息内容'); return; }
-  results = extractNumbers(text);
-  renderOutput();
-  if (results.length === 0) showToast('未识别到单号，试试调小"最短位数"');
-  else showToast('提取到 ' + results.length + ' 个单号');
+  
+  const btn = document.getElementById('btnExtractText');
+  const originalText = btn.textContent;
+  
+  // 🌟新增优化：加入防抖与 Loading 态，防止巨量文本运算卡死 UI 主线程
+  btn.textContent = '提取中...';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    results = extractNumbers(text);
+    renderOutput();
+    if (results.length === 0) showToast('未识别到单号，试试调小"最短位数"');
+    else showToast('提取到 ' + results.length + ' 个单号');
+    
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }, 50);
 }
 
 function handleFile(files) {
   if (!files.length) return;
   imageFiles = Array.from(files);
-  const preview = document.getElementById('previewImg');
-  const reader = new FileReader();
-  reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
-  reader.readAsDataURL(files[0]);
+  const container = document.getElementById('previewContainer');
+  container.innerHTML = '';
+  
+  // 🌟新增优化：多图缩略图并行渲染
+  imageFiles.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => { 
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.className = 'preview-thumb';
+      container.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+  
   showToast('已选择 ' + files.length + ' 张图片');
 }
 
@@ -335,73 +577,101 @@ function handleDrop(e) {
   handleFile(e.dataTransfer.files);
 }
 
+// 🌟新增优化：利用 Canvas 进行前端图像压缩，大幅降低 API Token 消耗和网络延迟
+function compressImage(file, maxSide = 1024, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        if (w > maxSide || h > maxSide) {
+          if (w > h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+          else { w = Math.round((w * maxSide) / h); h = maxSide; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl.split(',')[1]); // 仅返回 base64 数据部分
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// 🌟新增优化：并发处理多图请求
 async function extractFromImage() {
   if (!imageFiles.length) { showToast('请先上传截图'); return; }
   const key = localStorage.getItem('jotarou_key') || document.getElementById('apiKey').value.trim();
   if (!key) { showToast('请先填写并保存 API Key'); return; }
+  
   const model = document.getElementById('modelSelect').value;
-
   const statusBar = document.getElementById('statusBar');
-  statusBar.textContent = '正在识别 ' + imageFiles.length + ' 张图片（模型：' + model + '）…';
+  const btn = document.getElementById('btnExtractImage');
+  
+  statusBar.textContent = `正在并发识别 ${imageFiles.length} 张图片（模型：${model}）…`;
   statusBar.classList.add('show');
+  btn.disabled = true;
 
-  let allText = '';
-  for (let i = 0; i < imageFiles.length; i++) {
-    statusBar.textContent = '正在识别第 ' + (i+1) + '/' + imageFiles.length + ' 张（' + model + '）…';
-    try {
-      const b64 = await fileToBase64(imageFiles[i]);
-      const mime = imageFiles[i].type || 'image/jpeg';
-
-      // Build messages - both OpenAI and Claude use same format via jotarou gateway
-      const resp = await fetch('https://jotarou.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify({
-          model: model,
-          max_tokens: 2000,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image_url', image_url: { url: 'data:' + mime + ';base64,' + b64 } },
+  try {
+    const promises = imageFiles.map(async (file, index) => {
+      try {
+        const b64 = await compressImage(file);
+        const resp = await fetch('https://jotarou.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+          body: JSON.stringify({
+            model: model, max_tokens: 2000,
+            messages: [{ role: 'user', content: [
+              { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } },
               { type: 'text', text: '请识别图片中所有快递单号，只输出单号本身，每行一个，不要任何解释、标点或其他文字。快递单号特征：字母前缀如YT/JT/SF等加数字，或纯数字12-18位。' }
-            ]
-          }]
-        })
-      });
+            ]}]
+          })
+        });
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error.message);
+        return data.choices[0].message.content;
+      } catch (err) {
+        console.error(`第 ${index + 1} 张图片识别失败:`, err);
+        return ''; // 容错处理，不中断其他图片的识别
+      }
+    });
 
-      const data = await resp.json();
-      if (data.error) { showToast('API错误: ' + data.error.message); statusBar.classList.remove('show'); return; }
-      allText += '\n' + data.choices[0].message.content;
-    } catch(e) {
-      showToast('识别失败: ' + e.message);
+    const resultsArray = await Promise.all(promises);
+    const allText = resultsArray.join('\n');
+    
+    if (allText.trim()) {
+      const newResults = extractNumbers(allText);
+      results = document.getElementById('dedup').checked
+        ? [...new Set([...results, ...newResults])]
+        : [...results, ...newResults];
+      renderOutput();
+      showToast(`识别完成，新增提取 ${newResults.length} 个单号`);
+    } else {
+      showToast('未识别到任何单号内容');
     }
-  }
 
-  statusBar.classList.remove('show');
-  if (allText.trim()) {
-    const newResults = extractNumbers(allText);
-    results = document.getElementById('dedup').checked
-      ? [...new Set([...results, ...newResults])]
-      : [...results, ...newResults];
-    renderOutput();
-    showToast('识别完成，共 ' + results.length + ' 个单号');
-  } else {
-    showToast('未识别到任何内容');
+  } catch(e) {
+    showToast('并发识别流程出错: ' + e.message);
+  } finally {
+    statusBar.classList.remove('show');
+    btn.disabled = false;
   }
-}
-
-function fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = e => res(e.target.result.split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
 }
 
 function renderOutput() {
   const out = document.getElementById('output');
   document.getElementById('count').textContent = results.length + ' 个';
+  
+  // 持久化数据
+  localStorage.setItem('jotarou_express_results', JSON.stringify(results));
+
   if (!results.length) { out.innerHTML = '<div class="empty">提取结果会显示在这里</div>'; return; }
   out.innerHTML = results.map(n => '<span class="num">' + n + '</span>').join('');
 }
@@ -409,13 +679,14 @@ function renderOutput() {
 function copyResult() {
   if (!results.length) { showToast('没有可复制的内容'); return; }
   const txt = results.join('\n');
-  navigator.clipboard.writeText(txt).then(() => showToast('已复制 ' + results.length + ' 个单号'))
-  .catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = txt; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    showToast('已复制 ' + results.length + ' 个单号');
-  });
+  navigator.clipboard.writeText(txt)
+    .then(() => showToast('已复制 ' + results.length + ' 个单号'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = txt; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      showToast('已复制 ' + results.length + ' 个单号');
+    });
 }
 
 function exportExcel() {
@@ -426,23 +697,38 @@ function exportExcel() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   const d = new Date();
-  a.download = '快递单号_' + d.getFullYear() + ('0'+(d.getMonth()+1)).slice(-2) + ('0'+d.getDate()).slice(-2) + '_' + ('0'+d.getHours()).slice(-2) + ('0'+d.getMinutes()).slice(-2) + '.csv';
+  a.download = '快递单号_' + d.getFullYear() + ('0'+(d.getMonth()+1)).slice(-2) + ('0'+d.getDate()).slice(-2) + '.csv';
   a.click();
-  showToast('已导出 Excel 文件');
+  showToast('已导出 CSV 文件');
 }
 
 function clearInput() { document.getElementById('input').value = ''; }
 function clearImage() {
   imageFiles = [];
-  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('previewContainer').innerHTML = '';
   document.getElementById('fileInput').value = '';
 }
 function clearResult() { results = []; renderOutput(); }
 
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+  localStorage.setItem('theme', isDark ? '' : 'dark');
+  updateThemeBtn();
+}
+function updateThemeBtn() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.querySelector('.theme-btn').textContent = isDark ? '☀️ 浅色' : '🌙 深色';
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
+  t.textContent = msg; 
+  t.classList.add('show');
+  
+  // 清除可能存在的旧定时器
+  if(window.toastTimer) clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 </script>
 </body>
